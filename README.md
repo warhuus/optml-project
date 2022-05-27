@@ -22,3 +22,7 @@ We make a benchmark for zero-order optimization algorithms to compare them with 
 ### Discussion
 
 ### Conclusion
+
+## Papers we could consider
+
+1) Zeroth-order regularized optimization (ZORO): Approximately Sparse Gradients and Adaptive Sampling (HanQin Cai, [2021](https://arxiv.org/pdf/2003.13001.pdf)) ([GitHub](https://github.com/caesarcai/ZORO)) 
