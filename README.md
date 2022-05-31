@@ -28,8 +28,22 @@ We make a benchmark for zero-order optimization (ZOO) algorithms to see how well
 ## Papers we could consider
 
 
-1) Zeroth-order regularized optimization (ZORO): Approximately Sparse Gradients and Adaptive Sampling (HanQin Cai, [2021](https://arxiv.org/pdf/2003.13001.pdf)) ([GitHub](https://github.com/caesarcai/ZORO)) (Clear and understandable paper, with several references to other ZO-algos such as: ZO-SCD, ZO-SGD, ZO-AdaMM ...)
+[] Zeroth-order regularized optimization (ZORO): Approximately Sparse Gradients and Adaptive Sampling (HanQin Cai, [2021](https://arxiv.org/pdf/2003.13001.pdf)) ([GitHub](https://github.com/caesarcai/ZORO)) (Clear and understandable paper, with several references to other ZO-algos such as: ZO-SCD, ZO-SGD, ZO-AdaMM ...)
 
-2) Sparse Perturbations for Improved Convergence in Stochastic Zeroth-Order Optimization (Mayumi Ohta, [2020](https://arxiv.org/pdf/2006.01759.pdf)) ([GitHub](https://github.com/StatNLP/sparse_szo))  (So this is Stochastic ZO optimization, interesting?)
+[] Sparse Perturbations for Improved Convergence in Stochastic Zeroth-Order Optimization (Mayumi Ohta, [2020](https://arxiv.org/pdf/2006.01759.pdf)) ([GitHub](https://github.com/StatNLP/sparse_szo))  (So this is Stochastic ZO optimization, interesting?)
 
-3) ZOO: Zeroth Order Optimization Based Black-box Attacks to Deep Neural Networks without Training Substitute Models (Pin-Yu Chen et al. [2017](https://arxiv.org/pdf/1708.03999.pdf)) ([GitHub](https://github.com/as791/ZOO_Attack_PyTorch)) (This paper seems a bit overkill, but still interesting now that we understand how zero order optimization aimed at "falsifying" a models classifier). 
+[x] ZOO: Zeroth Order Optimization Based Black-box Attacks to Deep Neural Networks without Training Substitute Models (Pin-Yu Chen et al. [2017](https://arxiv.org/pdf/1708.03999.pdf)) ([GitHub](https://github.com/as791/ZOO_Attack_PyTorch)) (This paper seems a bit overkill, but still interesting now that we understand how zero order optimization aimed at "falsifying" a models classifier). 
+
+## What we have done so far:
+### Meeting 31-05
+
+We have all read the [ZOO](https://arxiv.org/pdf/1708.03999.pdf) paper. Really great. Gave a _great insight_ into basic ZOO attack. Two method implementations could be considered: ZOO-Adam and ZOO-Newton. CiFar10 and MNIST datasets were attacked. Comparison between C&W White-box attack and their own black-box attack was presented. On top of that, performance comparison was made with both targeted and untargeted attacks. 
+
+**Next goals**: 
+- Implement ZOO-Adam or ZOO-Newton 
+- Read two other papers 
+- Choose the best Kaggle model for CNN
+
+Thursday evening 02-06 meet in person with Chris and Simon Liu to start the project. 
+
+**Next meeting** -> Tuesday 7th of June. 
