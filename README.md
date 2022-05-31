@@ -18,6 +18,9 @@ We make a benchmark for zero-order optimization (ZOO) algorithms to see how well
 
 #### Results
 
+- Benchmark 
+- Our own implementation of ZOO against the best [Kaggle CNN implementation](https://www.kaggle.com/competitions/histopathologic-cancer-detection/code?competitionId=11848&sortBy=scoreDescending).
+
 ### Discussion
 
 ### Conclusion
