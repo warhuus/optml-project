@@ -3,17 +3,16 @@ This is a mini-project which focuses on practical implementation. It investigate
 for a real-life machine learning application and gives us insight into that algorithm. We should provide empirical
 evidence for the behavior of our chosen optimization algorithm or modification.
 
-**It seems like we have chosen to work with this topic:** "How well do zero-order optimization methods do for ML applications, compared to standard first-order methods?"
-
+**It seems like we have chosen to work with this topic:** "How well do zero-order optimization methods do for ML applications?"
 ## Outline for the project
 
 ### Introduction
 
-Present the theory and general idea for zeroth-order optimization algorithms and first-order algorithms. Describe which algorithms we chose and why. Maybe go deeper into what each algorithm is about.
+Present the theory and general idea for zeroth-order optimization algorithms. Describe which algorithms we chose and why. Maybe go deeper into what each algorithm is about.
 
 ### Our contribution
 
-We make a benchmark for zero-order optimization (ZOO) algorithms to compare them with first-order methods to see how well they apply in ML. **AND** we implement ourselves one of the algorithms against a real-world already trained model (like cancer cells CNN), that still stays novel enough. By doing so, we get to check the robustness of this latter and get a chance to understand the theory on our own. 
+We make a benchmark for zero-order optimization (ZOO) algorithms to see how well they apply in ML applications. **AND** we implement ourselves one of the algorithms against a real-world already trained model (like cancer cells CNN), that still stays novel enough. By doing so, we get to check the robustness of this latter and get a chance to understand the theory on our own. 
 
 ### Experiments
 
