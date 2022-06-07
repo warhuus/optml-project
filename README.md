@@ -47,3 +47,11 @@ We have all read the [ZOO](https://arxiv.org/pdf/1708.03999.pdf) paper. Really g
 Thursday evening 02-06 meet in person with Chris and Simon Liu to start the project. 
 
 **Next meeting** -> Tuesday 7th of June. 
+
+### Meeting 07-05
+
+Simon Liu will be working on SZOO implementation. Found a wonderful Kaggle CNN model for cancer cells. Simon Larsen will look at the paper [ZORO](https://arxiv.org/pdf/2003.13001.pdf). Chris is working on implementing ZOO.
+
+**Next goals**:
+- Get MNIST downloaded and choose a model for it (each paper uses its own constructed MNIST model)
+- Implement everything 
