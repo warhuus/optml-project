@@ -52,6 +52,14 @@ Thursday evening 02-06 meet in person with Chris and Simon Liu to start the proj
 
 Simon Liu will be working on SZOO implementation. Found a wonderful Kaggle CNN model for cancer cells. Simon Larsen will look at the paper [ZORO](https://arxiv.org/pdf/2003.13001.pdf). Chris is working on implementing ZOO.
 
+Chris: Went through all ZOO. Pushed a utils file. Added ZOO stuff in a folder in the repo. Will continue to make changes in the utils and make it work with the cancer data. Thursday hopefully will get an idea of how it works. Utils is a bit cancer apparently.
+
+_We can make seperate utils._
+
+Simon Liu: Pushing Imagenet stuff now. Similar format to cancer (but different data download). 
+
 **Next goals**:
 - Get MNIST downloaded and choose a model for it (each paper uses its own constructed MNIST model)
 - Implement everything 
+
+**Next meeting** -> Friday 10th of June. 
