@@ -10,8 +10,9 @@ import scipy.misc
 import os
 import sys
 from PIL import Image
-from setup_mnist_model import MNIST
-from setup_cifar10_model import CIFAR10
+from zoo.setup_mnist_model import MNIST
+from zoo.setup_cifar10_model import CIFAR10
+from Cancer import utils as cancer_utils
 
 """##L2 Black Box Attack"""
 
@@ -54,13 +55,21 @@ def coordinate_Newton(losses, indice, grad, hess, batch_size, mt_arr, vt_arr, re
     old_val = np.maximum(np.minimum(old_val, up[indice]), down[indice])
   m[indice] = old_val
 
-def loss_run(input,target,model,modifier,use_tanh,use_log,targeted,confidence,const):
+import math
+sigmoid = lambda x: 1 / (1 + math.exp(-x))
+
+def loss_run(input,target,model,modifier,use_tanh,use_log,targeted,confidence,const,device):
   if use_tanh:
     pert_out = torch.tanh(input +modifier)/2
   else:
     pert_out = input + modifier
 
   output = model(pert_out)
+  if output.shape[1] == 1000:
+    probs = torch.sigmoid(output[:, 0])
+    two_class_probs = torch.hstack([torch.atleast_2d(1 - probs).T, torch.atleast_2d(probs).T])
+    output = torch.logit(two_class_probs)
+
   if use_log:
     output = F.softmax(output,-1)
   
@@ -76,7 +85,7 @@ def loss_run(input,target,model,modifier,use_tanh,use_log,targeted,confidence,co
     real=torch.log(real+1e-30)
     other=torch.log(other+1e-30)
   
-  confidence = torch.tensor(confidence).type(torch.float64).cuda()
+  confidence = torch.tensor(confidence).type(torch.float64).to(device)
   
   if targeted:
     loss2 = torch.max(other-real,confidence)
@@ -89,19 +98,19 @@ def loss_run(input,target,model,modifier,use_tanh,use_log,targeted,confidence,co
   
   return loss.detach().cpu().numpy(), l2.detach().cpu().numpy(), loss2.detach().cpu().numpy(), output.detach().cpu().numpy(), pert_out.detach().cpu().numpy()
 
-def l2_attack(input, target, model, targeted, use_log, use_tanh, solver, reset_adam_after_found=True,abort_early=True,
+def l2_attack(input, target, model, targeted, use_log, use_tanh, solver, device, reset_adam_after_found=True,abort_early=True,
               batch_size=128,max_iter=1000,const=0.01,confidence=0.0,early_stop_iters=100, binary_search_steps=9,
               step_size=0.01,adam_beta1=0.9,adam_beta2=0.999):
   
   early_stop_iters = early_stop_iters if early_stop_iters != 0 else max_iter // 10
 
-  input = torch.from_numpy(input).cuda()
-  target = torch.from_numpy(target).cuda()
+  input = torch.from_numpy(input).to(device)
+  target = torch.from_numpy(target).to(device)
   
   var_len = input.view(-1).size()[0]
   modifier_up = np.zeros(var_len, dtype=np.float32)
   modifier_down = np.zeros(var_len, dtype=np.float32)
-  real_modifier = torch.zeros(input.size(),dtype=torch.float32).cuda()
+  real_modifier = torch.zeros(input.size(),dtype=torch.float32).to(device)
   mt = np.zeros(var_len, dtype=np.float32)
   vt = np.zeros(var_len, dtype=np.float32)
   adam_epoch = np.ones(var_len, dtype=np.int32)
@@ -148,7 +157,7 @@ def l2_attack(input, target, model, targeted, use_log, use_tanh, solver, reset_a
     
     for iter in range(max_iter):
       if (iter+1)%100 == 0:
-        loss, l2, loss2, _ , __ = loss_run(input,target,model,real_modifier,use_tanh,use_log,targeted,confidence,const)
+        loss, l2, loss2, _ , __ = loss_run(input,target,model,real_modifier,use_tanh,use_log,targeted,confidence,const,device)
         print("[STATS][L2] iter = {}, loss = {:.5f}, loss1 = {:.5f}, loss2 = {:.5f}".format(iter+1, loss[0], l2[0], loss2[0]))
         sys.stdout.flush()
 
@@ -159,14 +168,14 @@ def l2_attack(input, target, model, targeted, use_log, use_tanh, solver, reset_a
         var[i*2+1].reshape(-1)[indice[i]]+=0.0001
         var[i*2+2].reshape(-1)[indice[i]]-=0.0001
       var = torch.from_numpy(var)
-      var = var.view((-1,)+input.size()[1:]).cuda()
-      losses, l2s, losses2, scores, pert_images = loss_run(input,target,model,var,use_tanh,use_log,targeted,confidence,const) 
+      var = var.view((-1,)+input.size()[1:]).to(device)
+      losses, l2s, losses2, scores, pert_images = loss_run(input,target,model,var,use_tanh,use_log,targeted,confidence,const,device) 
       real_modifier_numpy = real_modifier.clone().detach().cpu().numpy()
       if solver=="adam":
         coordinate_ADAM(losses,indice,grad,hess,batch_size,mt,vt,real_modifier_numpy,adam_epoch,modifier_up,modifier_down,step_size,adam_beta1,adam_beta2,proj=not use_tanh)
       if solver=="newton":
         coordinate_Newton(losses,indice,grad,hess,batch_size,mt,vt,real_modifier_numpy,adam_epoch,modifier_up,modifier_down,step_size,adam_beta1,adam_beta2,proj=not use_tanh)
-      real_modifier=torch.from_numpy(real_modifier_numpy).cuda()
+      real_modifier=torch.from_numpy(real_modifier_numpy).to(device)
       
       if losses2[0]==0.0 and last_loss2!=0.0 and stage==0:
         if reset_adam_after_found:
@@ -212,10 +221,9 @@ def l2_attack(input, target, model, targeted, use_log, use_tanh, solver, reset_a
 
   return out_best_attack, out_bestscore
 
-def generate_data(test_loader,targeted,samples,start):
+def generate_data(test_loader,targeted,samples,start,num_label=10):
   inputs=[]
   targets=[]
-  num_label=10
   cnt=0
   for i, data in enumerate(test_loader):
     if cnt<samples:
@@ -252,45 +260,61 @@ def attack(inputs, targets, model, targeted, use_log, use_tanh, solver, device):
     r.append(attack)
   return np.array(r)
 
-if __name__=='__main__':
+def main():
   np.random.seed(42)
   torch.manual_seed(42)
 
   transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (1.0,))])
   # test_set = datasets.MNIST(root = './data', train=False, transform = transform, download=True)
-  test_set = datasets.CIFAR10(root = './data', train=False, transform = transform, download=True)
-  test_loader = torch.utils.data.DataLoader(test_set,batch_size=1,shuffle=True)
+  # test_set = datasets.CIFAR10(root = './data', train=False, transform = transform, download=True)
+  test_set = cancer_utils.get_dataset(base_dir=os.path.join('Cancer', 'input'))
+  test_loader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=True)
 
   use_cuda=True
   device = torch.device("cuda" if (use_cuda and torch.cuda.is_available()) else "cpu")
 
-  # model = MNIST().to(device)
-  model = CIFAR10().to(device) 
 
-  # model.load_state_dict(torch.load('./models/mnist_model.pt'))
-  model.load_state_dict(torch.load('./models/cifar10_model.pt'))
-  model.eval()
+  # model = MNIST().to(device)
+  # model = CIFAR10().to(device)
+
+  # model.load_state_dict(torch.load('./zoo/models/mnist_model.pt'))
+  # model.load_state_dict(torch.load('./zoo/models/cifar10_model.pt', map_location=device))
+  # model.eval()
+
+  model = cancer_utils.get_model('Cancer', device)
 
   use_log=True
-  use_tanh=True
+  use_tanh=False
   targeted=True
-  solver="newton"
+  solver="adam"
   #start is a offset to start taking sample from test set
   #samples is the how many samples to take in total : for targeted, 1 means all 9 class target -> 9 total samples whereas for untargeted the original data 
   #sample is taken i.e. 1 sample only 
-  inputs, targets = generate_data(test_loader,targeted,samples=10,start=6)
+  # inputs, targets = generate_data(test_loader,targeted,samples=10,start=6)
+  inputs, targets = generate_data(test_loader,targeted,samples=5,start=6,num_label=2)
   timestart = time.time()
   adv = attack(inputs, targets, model, targeted, use_log, use_tanh, solver, device)
   timeend = time.time()
   print("Took",(timeend-timestart)/60.0,"mins to run",len(inputs),"samples.")
 
+  out_inp = model(torch.from_numpy(inputs).to(device))
+  if out_inp.shape[1] == 1000:
+    probs = torch.sigmoid(out_inp[:, 0])
+    two_class_probs = torch.hstack([torch.atleast_2d(1 - probs).T, torch.atleast_2d(probs).T])
+    out_inp = torch.logit(two_class_probs)
+  out_adv = model(torch.from_numpy(inputs).to(device))
+  if out_adv.shape[1] == 1000:
+    probs = torch.sigmoid(out_adv[:, 0])
+    two_class_probs = torch.hstack([torch.atleast_2d(1 - probs).T, torch.atleast_2d(probs).T])
+    out_inp = torch.logit(two_class_probs)
+
   if use_log:
-    valid_class = np.argmax(F.softmax(model(torch.from_numpy(inputs).cuda()),-1).detach().cpu().numpy(),-1)
-    adv_class = np.argmax(F.softmax(model(torch.from_numpy(adv).cuda()),-1).detach().cpu().numpy(),-1)
+    valid_class = np.argmax(F.softmax(out_inp,-1).detach().cpu().numpy(),-1)
+    adv_class = np.argmax(F.softmax(out_adv,-1).detach().cpu().numpy(),-1)
 
   else:
-    valid_class = np.argmax(model(torch.from_numpy(inputs).cuda()).detach().cpu().numpy(),-1)
-    adv_class = np.argmax(model(torch.from_numpy(adv).cuda()).detach().cpu().numpy(),-1)
+    valid_class = np.argmax(out_inp.detach().cpu().numpy(),-1)
+    adv_class = np.argmax(out_adv.detach().cpu().numpy(),-1)
     
   acc = ((valid_class==adv_class).sum())/len(inputs)
   print("Valid Classification: ", valid_class)
@@ -349,4 +373,6 @@ if __name__=='__main__':
     else:
       plt.savefig('adam_untargeted_cifar10.png') 
 
+if __name__=='__main__':
+  main()
 
