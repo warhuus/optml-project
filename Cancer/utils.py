@@ -53,9 +53,9 @@ class memoized(object):
 
 @memoized
 def get_labels(base_dir):
-    files = os.listdir(base_dir + "train")
+    files = os.listdir(os.path.join(base_dir, "train"))
     files_noext = [i.split(".")[0] for i in files]
-    labels = pd.read_csv(base_dir + 'train_labels.csv')
+    labels = pd.read_csv(os.path.join(base_dir, 'train_labels.csv'))
     return labels.loc[labels["id"].isin(files_noext)]
 
 def get_img_class_dict(base_dir):
@@ -73,11 +73,11 @@ def seed_everything(seed=323):
 
 def plot_sample_images(base_dir):
     fig = plt.figure(figsize=(25, 4))
-    train_imgs = os.listdir(base_dir + "train")
+    train_imgs = os.listdir(os.path.join(base_dir, "train"))
     labels = get_labels(base_dir)
     for idx, img in enumerate(np.random.choice(train_imgs, 20)):
         ax = fig.add_subplot(2, 20//2, idx+1, xticks=[], yticks=[])
-        im = Image.open(base_dir + "train/" + img)
+        im = Image.open(os.path.join(base_dir, "train", img))
         plt.imshow(im)
         lab = labels.loc[labels['id'] == img.split('.')[0], 'label'].values[0]
         ax.set_title('Label: %s'%lab)
@@ -124,24 +124,21 @@ class CancerDataset(Dataset):
             return self.dataset[idx], 0
 
 
-def get_dataloader(base_dir):
+def get_dataset(base_dir):
     img_class_dict = get_img_class_dict(base_dir)
     data_transforms_test = albumentations.Compose([
         albumentations.Resize(224, 224),
         albumentations.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225]),
         AT.ToTensorV2()
     ])
-    dataset = CancerDataset(datafolder=base_dir + 'train/', datatype='test', transform=data_transforms_test, labels_dict=img_class_dict)
-    # prepare data loaders (combine dataset and sampler)
-    return torch.utils.data.DataLoader(dataset, batch_size=1, num_workers=0)
+    return CancerDataset(datafolder=os.path.join(base_dir, 'train'), datatype='train', transform=data_transforms_test, labels_dict=img_class_dict)
 
-def get_model(base_dir):
+def get_model(base_dir, device):
     model_conv = ptcv_get_model("cbam_resnet50", pretrained=True)
     model_conv.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
     model_conv.last_linear = nn.Sequential(nn.Dropout(0.6), nn.Linear(in_features=2048, out_features=512, bias=True), nn.SELU(),
                                            nn.Dropout(0.8),  nn.Linear(in_features=512, out_features=1, bias=True))
-    # don't think we need this line
-    # model_conv.eval()
-    saved_dict = torch.load(base_dir + 'model.pt', map_location=torch.device('cpu'))
+    model_conv.eval()
+    saved_dict = torch.load(os.path.join(base_dir, 'model.pt'), map_location=device)
     model_conv.load_state_dict(saved_dict)
     return model_conv
