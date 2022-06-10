@@ -67,6 +67,6 @@ Simon Liu: Pushing Imagenet stuff now. Similar format to cancer (but different d
 
 ### Meeting 10-05
 
-Simon Liu creates n-dimensional, linearly dependent dataset + looks at Pytorch -> Tensorflow [conversion](https://github.com/onnx/tutorials/blob/main/tutorials/PytorchTensorflowMnist.ipynb) 
+Simon Liu creates n-dimensional, linearly dependent dataset with the training of a linear seperator + looks at Pytorch -> Tensorflow [conversion](https://github.com/onnx/tutorials/blob/main/tutorials/PytorchTensorflowMnist.ipynb) 
 Chris -> Still working on ZOO implementation through Tensorflow full repo. 
 Simon W. Ø. Larsen -> Try to implement and make ZORO work still :( 
