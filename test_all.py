@@ -14,12 +14,13 @@ import numpy as np
 import random
 import time
 
-from setup_cifar import CIFAR, CIFARModel
-from setup_mnist import MNIST, MNISTModel
-from setup_inception import ImageNet, InceptionModel
+from ZOOTensorFlow.setup_cifar import CIFAR, CIFARModel
+from ZOOTensorFlow.setup_mnist import MNIST, MNISTModel
+from ZOOTensorFlow.setup_inception import ImageNet, InceptionModel
+from ZOOTensorFlow.setup_cancer import CancerDataset, get_cancer_model
 
-from l2_attack import CarliniL2
-from l2_attack_black import BlackBoxL2
+from ZOOTensorFlow.l2_attack import CarliniL2
+from ZOOTensorFlow.l2_attack_black import BlackBoxL2
 
 from PIL import Image
 
@@ -88,7 +89,7 @@ def generate_data(data, samples, targeted=True, start=0, inception=False):
     return inputs, targets, labels, true_ids
 
 def main(args):
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
         use_log = not args['use_zvalue']
         is_inception = args['dataset'] == "imagenet"
         # load network
@@ -101,6 +102,8 @@ def main(args):
             # data, model = CIFAR(), CIFARModel("models/cifar-distilled-100", sess, use_log)
         elif args['dataset'] == "imagenet":
             data, model = ImageNet(), InceptionModel(sess, use_log)
+        elif args['dataset'] == 'cancer':
+            data, model = CancerDataset(), get_cancer_model()
         print('Done...')
         if args['numimg'] == 0:
             args['numimg'] = len(data.test_labels) - args['firstimg']
@@ -191,7 +194,7 @@ def main(args):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--dataset", choices=["mnist", "cifar10", "imagenet"], default="mnist")
+    parser.add_argument("-d", "--dataset", choices=["mnist", "cifar10", "imagenet", "cancer"], default="mnist")
     parser.add_argument("-s", "--save", default="./saved_results")
     parser.add_argument("-a", "--attack", choices=["white", "black"], default="white")
     parser.add_argument("-n", "--numimg", type=int, default=0, help = "number of test images to attack")
