@@ -1,0 +1,5 @@
+Model used is from Kaggle competition: https://www.kaggle.com/code/seefun/you-really-need-attention-pytorch/notebook
+and used in accordance with Kaggle Terms of Use for Public User Submissions.
+
+Data is from Kaggle competition: https://www.kaggle.com/competitions/histopathologic-cancer-detection/rules
+and used in accordance with the above competition's rules for educational purposes.
