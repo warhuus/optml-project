@@ -21,8 +21,12 @@ mpl.style.use('seaborn')
 n = 2000
 s = int(0.1*n)
 noiseamp = 0.001 # noise amplitude
-obj_func = SparseQuadric(n, s, noiseamp)
+############
+# OBJ FUNC #
+############
 
+obj_func = SparseQuadric(n, s, noiseamp)
+###########
 # Choose initialization
 x0    = np.random.randn(n)
 x0    = 100*x0/np.linalg.norm(x0)

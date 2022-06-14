@@ -9,8 +9,8 @@ Code for ZORO, by Cai, McKenzie ,Yin, and Zhang
 
 import numpy as np
 import numpy.linalg as la
-from base import BaseOptimizer
-from Cosamp import cosamp
+from .base import BaseOptimizer
+from .Cosamp import cosamp
 
 
 class ZORO(BaseOptimizer):
