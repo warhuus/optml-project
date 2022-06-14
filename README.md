@@ -14,6 +14,10 @@ Present the theory and general idea for zeroth-order optimization algorithms. De
 
 We make a benchmark for zero-order optimization (ZOO) algorithms to see how well they apply in ML applications. **AND** we implement ourselves one of the algorithms against a real-world already trained model (like cancer cells CNN), that still stays novel enough. By doing so, we get to check the robustness of this latter and get a chance to understand the theory on our own. 
 
+### Licenses and Usage
+
+All third-party code and data is used with permission, and we include their corresponding licenses.
+
 ### Experiments
 
 #### Results
