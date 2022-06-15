@@ -6,14 +6,15 @@ from ZORO.optimizers import *
 import torch
 import numpy as np
 from torch.utils.data import TensorDataset, DataLoader,Dataset
+from torchvision import datasets, transforms
 import Cancer.utils as cancer_utils
-import ImageNet.utils as imagenet_utils
+import FashionMNIST.utils as fashionmnist_utils
 import albumentations
 from albumentations import pytorch as AT
 import math
 
 DATASET = 'Cancer'
-# DATASET = 'ImageNet'
+# DATASET = 'FashionMNIST'
 
 sigmoid = lambda x: 1 / (1 + math.exp(-x))
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -26,17 +27,16 @@ if DATASET == 'Cancer':
     # get data
     dataset = cancer_utils.get_dataset(os.path.join('Cancer', 'input'))
 
-elif DATASET == 'ImageNet':
-
-    raise NotImplementedError
+elif DATASET == 'FashionMNIST':
 
     # get model
-    model = imagenet_utils.get_model(device)
+    model = fashionmnist_utils.get_model(device)
 
     # get data
-    transform = imagenet_utils.get_transform(model)
-    dataset = imagenet_utils.ImageNet(datafolder=os.path.join('ImageNet', 'imagenette2', 'val'),
-                                      transform=transform)
+    dataset = datasets.FashionMNIST(
+        os.path.join("FashionMNIST", "data"), download=True,
+        transform=transforms.Compose([transforms.ToTensor()])
+    )
 
 else:
     raise NotImplementedError
@@ -50,7 +50,7 @@ class LossCancer(object):
 		self.device = device
 		self.model = model
 		self.true_img = img.to(self.device)
-		self.true_lbl = true_lbl
+		self.true_lbl = true_lbl[0]
 		self.lambda_ = 0.9
 		self.shape = img_shape
 	
@@ -65,6 +65,18 @@ class LossCancer(object):
 		fx = sigmoid(pr)
 		return ((fx - 1 - self.true_lbl) ** 2 +
 				self.lambda_ * np.linalg.norm(delta, 0))
+
+class LossFashionMnist(LossCancer):
+
+    def __init__(self, target_class: int, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.target_class = target_class
+
+    def __call__(self, delta):
+        input = torch.reshape(self.true_img + torch.tensor(delta).to(self.device), self.shape)
+        with torch.no_grad():
+            output = self.model(input.type(torch.cuda.FloatTensor))
+        pr = torch.nn.functional.softmax(output[0], dim=0).cpu().numpy()
 		 
 
 obj_func = LossCancer(model=model, img=data.flatten(), true_lbl=target, img_shape=data.shape, device=device)
