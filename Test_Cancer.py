@@ -60,7 +60,10 @@ class LossCancer(object):
 		print(f'type delta:{type(delta)}')
 		print(f'type true_img:{type(self.true_img)}')
 		with torch.no_grad():
-			output = self.model(input.type(torch.cuda.FloatTensor))
+			if torch.cuda.is_available():
+				output = self.model(input.type(torch.cuda.FloatTensor))
+			else:
+				output = self.model(input.type(torch.FloatTensor))
 		pr = output[:, 0][0].cpu().numpy()
 		fx = sigmoid(pr)
 		return ((fx - 1 - self.true_lbl) ** 2 +
