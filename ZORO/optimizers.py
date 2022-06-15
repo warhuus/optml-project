@@ -64,23 +64,27 @@ class ZORO(BaseOptimizer):
         num_samples = np.size(Z, 0)
         x = self.x
         f = self.f
-        y = np.zeros(num_samples)
-        function_estimate = 0
+        #y = np.zeros(num_samples)
         
-        for i in range(num_samples):
-            y_temp = f(x + delta*np.transpose(Z[i,:]))
-            y_temp2 = f(x)
-            function_estimate += y_temp2
-            y[i] = (y_temp - y_temp2)/(np.sqrt(num_samples)*delta)
-            self.function_evals += 2
+        f_x = f(np.expand_dims(x, axis=0))
+        self.function_evals += 1
+
+        perturbed = np.repeat([x], len(Z), axis=0) + delta * Z
+        f_perturbed = f(perturbed)
+
+        y = (f_perturbed - f_x) / (np.sqrt(num_samples) * delta)
+        self.function_evals += len(y)
+        #for i in range(num_samples):
+        #    y_temp = f(np.expand_dims(x + delta*np.transpose(Z[i,:]), axis=0))
+        #    function_estimate += f_x
+        #    y[i] = (y_temp - f_x)/(np.sqrt(num_samples)*delta)
+        #    self.function_evals += 1
             
-        function_estimate = function_estimate/num_samples
-        
         Z = Z/np.sqrt(num_samples)
         grad_estimate = cosamp(Z, y, sparsity, tol, maxiterations)
         
     
-        return grad_estimate, function_estimate
+        return grad_estimate, f_x
 
     def step(self):
         '''
