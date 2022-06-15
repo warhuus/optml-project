@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import functools
+import collections
 import os
 from PIL import Image
 import timm
@@ -65,7 +67,7 @@ def get_label(name):
     
     
 class ImageNet(Dataset):
-    def __init__(self, datafolder="imagenette2/val", transform=None):
+    def __init__(self, datafolder=os.path.join('imagenette2', 'val'), transform=None):
         self.datafolder = datafolder
         self.transform = transform
         
@@ -73,7 +75,7 @@ class ImageNet(Dataset):
         for root, subdirs, files in os.walk(datafolder):
             for f in files:
                 self.image_files_list.append(
-                    (os.path.join(root, f), get_label(root.split("/")[-1]))
+                    (os.path.join(root, f), get_label(os.path.split(root)[-1]))
                 )
         
     def __len__(self):
