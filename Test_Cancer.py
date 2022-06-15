@@ -21,7 +21,7 @@ sigmoid = lambda x: 1 / (1 + math.exp(-x))
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 class LossCancer(object):
-
+ 
 	def __init__(self, model, img, img_shape, true_lbl, device) -> None:
 		self.device = device
 		self.model = model
@@ -88,8 +88,8 @@ elif DATASET == 'FashionMNIST':
         data, target = next(iter(dataloader))
 
     # get objective function
-    obj_func = LossFashionMnist(model=model, target_class=TARGET_CLASS, img=data.flatten(), true_lbl=target,
-                                img_shape=data.shape, device=device)
+    obj_func = LossFashionMnist(model=model, target_class=TARGET_CLASS, img=data.flatten(),
+                                true_lbl=target, img_shape=data.shape, device=device)
 
 else:
     raise NotImplementedError
