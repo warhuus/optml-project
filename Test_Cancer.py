@@ -28,7 +28,8 @@ class LossCancer(object):
     
     def __call__(self, delta):
         input = torch.reshape(self.true_img + delta, self.shape)
-        output = self.model(input.float()).detach()
+        with torch.no_grad():
+            output = self.model(input.float())
         pr = output[:, 0][0].numpy()
         fx = sigmoid(pr)
         return ((fx - 1 - self.true_lbl) ** 2 +
@@ -70,7 +71,7 @@ while termination is False:
     # termination = B
     # If ZORO terminated because the target accuracy is met,
     # termination= T.
-    
+    print('yo')
     evals_ZORO, solution_ZORO, termination = opt.step()
 
     # save some useful values
