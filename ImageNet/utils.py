@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import functools
+import collections
 import os
 from PIL import Image
 import timm
