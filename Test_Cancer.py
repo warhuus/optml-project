@@ -50,15 +50,12 @@ class LossCancer(object):
 		self.device = device
 		self.model = model
 		self.true_img = img.to(self.device)
-		self.true_lbl = true_lbl
+		self.true_lbl = true_lbl[0]
 		self.lambda_ = 0.9
 		self.shape = img_shape
 	
 	def __call__(self, delta):
 		input = torch.reshape(self.true_img + torch.tensor(delta).to(self.device), self.shape)
-		print(type(input))
-		print(f'type delta:{type(delta)}')
-		print(f'type true_img:{type(self.true_img)}')
 		with torch.no_grad():
 			if torch.cuda.is_available():
 				output = self.model(input.type(torch.cuda.FloatTensor))
@@ -76,7 +73,7 @@ n = 2000
 s = int(0.1*n)
 
 # Choose initialization
-x0    = torch.randn(np.prod(data.shape))
+x0    = np.random.randn(np.prod(data.shape))
 x0    = 100 * x0/np.linalg.norm(x0)
 xx0   = copy.deepcopy(x0)
 
@@ -93,7 +90,7 @@ performance_log_ZORO = [[0, obj_func(x0)]]
 
 # initialize optimizer object
 opt  = ZORO(x0, obj_func, params, function_budget= int(1e6))
-
+print(f'Type x0:{x0, type(obj_func)}')
 # the actual optimization routine
 termination = False
 print("Here")
@@ -110,7 +107,11 @@ while termination is False:
 
 	evals_ZORO, solution_ZORO, termination = opt.step()
 	# save some useful values
+	print(f'This is opt:{opt.fd}')
+	print(f'This is evals: {evals_ZORO}')
+	
 	performance_log_ZORO.append( [evals_ZORO,np.mean(opt.fd)] )
+	print(f'This is opt:{opt.fd}')
 	# print some useful values
 	opt.report( 'Estimated f(x_k): %f  function evals: %d\n' %
 	(np.mean(opt.fd), evals_ZORO) )
