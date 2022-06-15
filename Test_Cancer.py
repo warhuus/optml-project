@@ -1,20 +1,47 @@
 import enum
 import copy
+import os
 from ZORO.benchmarkfunctions import SparseQuadric
 from ZORO.optimizers import *
 import torch
 import numpy as np
 from torch.utils.data import TensorDataset, DataLoader,Dataset
-from Cancer.utils import CancerDataset, get_dataset, get_model
+import Cancer.utils as cancer_utils
+import ImageNet.utils as imagenet_utils
 import albumentations
 from albumentations import pytorch as AT
 import math
 
+DATASET = 'Cancer'
+# DATASET = 'ImageNet'
+
 sigmoid = lambda x: 1 / (1 + math.exp(-x))
-batch_size = 1
-num_workers = 0
-dataset = get_dataset('Cancer/input')
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, num_workers=num_workers)
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+if DATASET == 'Cancer':
+
+    # get model
+    model = cancer_utils.get_model('Cancer', device)
+
+    # get data
+    dataset = cancer_utils.get_dataset(os.path.join('Cancer', 'input'))
+
+elif DATASET == 'ImageNet':
+
+    raise NotImplementedError
+
+    # get model
+    model = imagenet_utils.get_model(device)
+
+    # get data
+    transform = imagenet_utils.get_transform(model)
+    dataset = imagenet_utils.ImageNet(datafolder=os.path.join('ImageNet', 'imagenette2', 'val'),
+                                      transform=transform)
+
+else:
+    raise NotImplementedError
+
+dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, num_workers=0)
 data, target = next(iter(dataloader))
 
 class LossCancer(object):
@@ -29,17 +56,18 @@ class LossCancer(object):
 	
 	def __call__(self, delta):
 		input = torch.reshape(self.true_img + torch.tensor(delta).to(self.device), self.shape)
+		print(type(input))
+		print(f'type delta:{type(delta)}')
+		print(f'type true_img:{type(self.true_img)}')
 		with torch.no_grad():
 			output = self.model(input.type(torch.cuda.FloatTensor))
 		pr = output[:, 0][0].cpu().numpy()
 		fx = sigmoid(pr)
 		return ((fx - 1 - self.true_lbl) ** 2 +
 				self.lambda_ * np.linalg.norm(delta, 0))
-		  
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+		 
 
-model = get_model('Cancer', device)
-obj_func = LossCancer(model=model,  img = data.flatten(), true_lbl= target, img_shape=data.shape, device=device)
+obj_func = LossCancer(model=model, img=data.flatten(), true_lbl=target, img_shape=data.shape, device=device)
 
 n = 2000
 s = int(0.1*n)
@@ -67,6 +95,7 @@ opt  = ZORO(x0, obj_func, params, function_budget= int(1e6))
 termination = False
 print("Here")
 while termination is False:
+	
 	# optimization step
 	# solution_ZORO = False until a termination criterion is met, in which 
 	# case solution_ZORO = the solution found.
@@ -75,13 +104,12 @@ while termination is False:
 	# termination = B
 	# If ZORO terminated because the target accuracy is met,
 	# termination= T.
-	print('yo')
-	evals_ZORO, solution_ZORO, termination = opt.step()
 
+	evals_ZORO, solution_ZORO, termination = opt.step()
 	# save some useful values
 	performance_log_ZORO.append( [evals_ZORO,np.mean(opt.fd)] )
 	# print some useful values
 	opt.report( 'Estimated f(x_k): %f  function evals: %d\n' %
-		(np.mean(opt.fd), evals_ZORO) )
+	(np.mean(opt.fd), evals_ZORO) )
 
 # for idx, (data, target) in enumerate(iter(dataloader)):
