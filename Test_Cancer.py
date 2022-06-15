@@ -35,6 +35,24 @@ class LossCancer(object):
         return ((fx - 1 - self.true_lbl) ** 2 +
                 self.lambda_ * np.linalg.norm(delta, 0))
 
+class LossImageNet(object):
+
+    def __init__(self, model, img, img_shape, true_lbl) -> None:
+        self.model = model
+        self.true_img = img
+        self.true_lbl = true_lbl
+        self.lambda_ = 0.9
+        self.shape = img_shape
+    
+    def __call__(self, delta):
+        input = torch.reshape(self.true_img + delta, self.shape)
+        with torch.no_grad():
+            output = self.model(input.float())
+        pr = output[:, 0][0].numpy()
+        fx = sigmoid(pr)
+        return ((fx - 1 - self.true_lbl) ** 2 +
+                self.lambda_ * np.linalg.norm(delta, 0))
+
 model = get_model('Cancer', 'cpu')
 obj_func = LossCancer(model=model,  img = data.flatten(), true_lbl= target, img_shape=data.shape)
 
@@ -71,7 +89,7 @@ while termination is False:
     # termination = B
     # If ZORO terminated because the target accuracy is met,
     # termination= T.
-    print('yo')
+    
     evals_ZORO, solution_ZORO, termination = opt.step()
 
     # save some useful values
