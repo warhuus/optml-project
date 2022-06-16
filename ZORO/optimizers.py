@@ -191,14 +191,25 @@ class AdaZORO(BaseOptimizer):
         
         # We could reuse the queries from letsq/cosamp in the same iteration
         # but we didn't do it for simplify the implementation
-        for i in range(save_queries_num, self.num_samples):
-            y_temp = f(x + delta*np.transpose(Z[i,:]))
-            y_temp2 = f(x)
-            function_estimate += y_temp2
-            y[i] = (y_temp - y_temp2)/(np.sqrt(self.num_samples)*delta)
-            function_evals += 2
+        f_x = f(np.expand_dims(x, axis=0))
+        function_evals += 1
         
-        function_estimate = function_estimate/self.num_samples
+        perturbed = np.repeat(
+                [x], 
+                self.num_samples-save_queries_num, 
+                axis=0) \
+            + delta * Z[save_queries_num:self.num_samples]
+        f_perturbed = f(perturbed)
+        
+        y[save_queries_num:self.num_samples] = \
+            (f_perturbed - f_x) / (np.sqrt(self.num_samples)*delta)
+        function_evals += len(y)
+        #for i in range(save_queries_num, self.num_samples):
+        #    y_temp = f(x + delta*np.transpose(Z[i,:]))
+        #    y[i] = (y_temp - f_x)/(np.sqrt(self.num_samples)*delta)
+        #    function_evals += 1
+        
+        function_estimate = f_x
         
         Z = Z/np.sqrt(self.num_samples)
         grad_estimate = cosamp(Z, y, sparsity, tol, maxiterations)
@@ -354,5 +365,5 @@ class AdaZORO(BaseOptimizer):
                 return self.function_evals, self.sparsity, self.x, 'T'
             
         self.t += 1
-        return self.function_evals, self.sparsity, False, False 
+        return self.function_evals, self.sparsity, self.x, False 
     
