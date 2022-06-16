@@ -74,12 +74,7 @@ class ZORO(BaseOptimizer):
 
         y = (f_perturbed - f_x) / (np.sqrt(num_samples) * delta)
         self.function_evals += len(y)
-        #for i in range(num_samples):
-        #    y_temp = f(np.expand_dims(x + delta*np.transpose(Z[i,:]), axis=0))
-        #    function_estimate += f_x
-        #    y[i] = (y_temp - f_x)/(np.sqrt(num_samples)*delta)
-        #    self.function_evals += 1
-            
+        
         Z = Z/np.sqrt(num_samples)
         grad_estimate = cosamp(Z, y, sparsity, tol, maxiterations)
         
@@ -185,14 +180,13 @@ class AdaZORO(BaseOptimizer):
         
         y = np.zeros(self.num_samples)
         save_queries_num = len(self.saved_y)
-        y[0:save_queries_num] = self.saved_y * np.sqrt(save_queries_num / self.num_samples)
-        function_estimate = self.saved_function_estimate * save_queries_num
-        
+        y[0:save_queries_num] = self.saved_y * np.sqrt(save_queries_num / self.num_samples)        
         
         # We could reuse the queries from letsq/cosamp in the same iteration
         # but we didn't do it for simplify the implementation
         f_x = f(np.expand_dims(x, axis=0))
         function_evals += 1
+        function_estimate = f_x
         
         perturbed = np.repeat(
                 [x], 
@@ -204,13 +198,7 @@ class AdaZORO(BaseOptimizer):
         y[save_queries_num:self.num_samples] = \
             (f_perturbed - f_x) / (np.sqrt(self.num_samples)*delta)
         function_evals += len(y)
-        #for i in range(save_queries_num, self.num_samples):
-        #    y_temp = f(x + delta*np.transpose(Z[i,:]))
-        #    y[i] = (y_temp - f_x)/(np.sqrt(self.num_samples)*delta)
-        #    function_evals += 1
-        
-        function_estimate = f_x
-        
+                
         Z = Z/np.sqrt(self.num_samples)
         grad_estimate = cosamp(Z, y, sparsity, tol, maxiterations)
         
@@ -244,7 +232,6 @@ class AdaZORO(BaseOptimizer):
         else:
             sparsity =  np.count_nonzero(old_grad_est)
             num_samples = int(self.compessible_constant * sparsity)
-            
         #Z = self.cosamp_params["Z"]
         Z = Z[0:num_samples,:]
         x = self.x
@@ -255,17 +242,21 @@ class AdaZORO(BaseOptimizer):
         function_estimate = 0
         function_evals = 0
         
+        f_x = f(np.expand_dims(x, axis=0))
+        function_estimate = f_x
+        function_evals += 1
+
         if compessible == True:
-            for i in range(num_samples):
-                y_temp = f(x + delta*np.transpose(Z[i,:]))
-                y_temp_restricted = f(x + delta*np.transpose(Z_restricted[i,:]))
-                y_mid = f(x)
-                function_estimate += y_mid
-                y[i] = (y_temp - y_mid)/(np.sqrt(num_samples)*delta)
-                y_restricted[i] = (y_temp_restricted - y_mid)/(np.sqrt(num_samples)*delta)
-                function_evals += 3        
-                    
-            function_estimate = function_estimate/num_samples
+            perturbed = np.repeat([x], len(Z), axis=0) + delta * Z   
+            perturbed_restricted = np.repeat([x], len(Z_restricted), axis=0) + delta * Z_restricted
+
+            f_perturbed = f(perturbed)
+            f_perturbed_restricted = f(perturbed_restricted)
+
+            y = (f_perturbed - f_x) / (np.sqrt(num_samples)*delta)
+            y_restricted = (f_perturbed_restricted - f_x) / (np.sqrt(num_samples)*delta)
+             
+            function_evals += len(y) + len(y_restricted)
             
             Z = Z/np.sqrt(num_samples)
             grad_est_non_zeros,_ ,_ ,_ = la.lstsq(Z[:,old_support], y_restricted, rcond=None)
@@ -286,18 +277,14 @@ class AdaZORO(BaseOptimizer):
             save_queries_num = len(self.saved_y)
             if save_queries_num  >= num_samples:
                 y = self.saved_y[0:num_samples] * np.sqrt(save_queries_num / num_samples)
-                function_estimate = self.saved_function_estimate * num_samples
             else:
-                y[0:save_queries_num] = self.saved_y * np.sqrt(save_queries_num / num_samples)
-                function_estimate = self.saved_function_estimate * save_queries_num
-                for i in range(save_queries_num, num_samples):
-                    y_temp = f(x + delta*np.transpose(Z[i,:]))
-                    y_mid = f(x)
-                    function_estimate += y_mid
-                    y[i] = (y_temp - y_mid)/(np.sqrt(num_samples)*delta)
-                    function_evals += 2        
+                y[0:save_queries_num] = self.saved_y * np.sqrt(save_queries_num / num_samples)                
+                perturbed = np.repeat([x], num_samples-save_queries_num, axis=0) + delta * Z[save_queries_num:num_samples]
+                f_perturbed = f(perturbed)
+                y[save_queries_num:num_samples] = (f_perturbed - f_x) / (np.sqrt(num_samples)*delta)
+                function_evals += abs(save_queries_num - num_samples)
                     
-            function_estimate = function_estimate/num_samples
+            function_estimate = f_x
             
             Z = Z/np.sqrt(num_samples)
             grad_est,_ ,_ ,_ = la.lstsq(Z, y, rcond=None)
