@@ -19,12 +19,13 @@ params = {
     "prop_sparsity": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5], 
     "lamb" : [1], 
     "norm" : [2],
+    "function_budget": [100]
 }
 
 device = torch.device('cpu')
-class Experiment:
+class ZOROExperiment:
 
-    def __init__(self, step_size, delta, max_cosamp_iter, cosamp_tol, prop_sparsity, lamb, norm):
+    def __init__(self, step_size, delta, max_cosamp_iter, cosamp_tol, prop_sparsity, lamb, norm, function_budget):
         self.step_size = step_size
         self.delta = delta
         self.max_cosamp_iter = max_cosamp_iter
@@ -34,6 +35,7 @@ class Experiment:
         self.norm = norm
         self.model = fashionmnist_utils.get_model(os.path.join('FashionMNIST', 'model.pt'), 'cpu')
         self.device = device
+        self.function_budget = function_budget
             
     def score(self, X, y):
         return self.loss
@@ -47,7 +49,8 @@ class Experiment:
             "cosamp_tol": self.cosamp_tol,
             "prop_sparsity": self.prop_sparsity,
             "lamb" : self.lamb,
-            "norm" : self.norm
+            "norm" : self.norm,
+            "function_budget": self.function_budget
         }
     
     def set_params(self, **kwargs):
@@ -56,7 +59,7 @@ class Experiment:
         return self
     
     def fit(self, X, y):
-        performance_log_ZORO = []
+        self.report = []
         
         params = {
             "step_size": self.step_size,
@@ -65,18 +68,12 @@ class Experiment:
             "cosamp_tol": self.cosamp_tol,
             "prop_sparsity": self.prop_sparsity,
             "lamb" : self.lamb,
-            "norm" : self.norm
+            "norm" : self.norm,
+            "function_budget": self.function_budget
         }
         
         params["sparsity"] = int(params["prop_sparsity"] * X.shape[1])
         params["num_samples"] = int(np.ceil(np.log(X.shape[1])*params["sparsity"]))
-
-        # print('PARAMS')
-        # for k, d in params.items():
-        #     print(k, ':', d)
-        # print('----------------')
-
-
 
         # Compute attack loss for each data point individually
         for i in range(len(X)):
@@ -98,8 +95,8 @@ class Experiment:
             obj_func.lambda_ = params['lamb']
 
             # initialize optimizer object
-            performance_log_ZORO.append([(0, obj_func(np.expand_dims(x0, 0))[0])])
-            opt = optimizers.ZORO(x0, obj_func, params, function_budget=1e5, function_target=0.001)
+            self.report.append([{"evals": 0, "x": x0, "y": label, "loss": obj_func(np.expand_dims(x0, 0))[0]}])
+            opt = optimizers.ZORO(x0, obj_func, params, function_budget=self.function_budget, function_target=0.001)
 
             # the optimization routine
             termination = False
@@ -116,16 +113,14 @@ class Experiment:
                 evals_ZORO, solution_ZORO, termination = opt.step()
 
                 # save some useful values
-                performance_log_ZORO[-1].append((evals_ZORO,np.mean(opt.fd)))
+                self.report[-1].append({"evals" : evals_ZORO, "x": solution_ZORO, "loss": np.mean(opt.fd)})
                 # print some useful values
-                opt.report( f'Estimated f(x_{i}): %f  function evals: %d\n' %
-                   (np.mean(opt.fd), evals_ZORO) )
-
-        final_loss = torch.stack([torch.tensor(i)[-1, 1] for i in performance_log_ZORO]).mean()
-        self.loss = final_loss.item()
+                #opt.report( f'Estimated f(x_{i}): %f  function evals: %d\n' %
+                #    (np.mean(opt.fd), evals_ZORO) )
+        self.loss = sum([self.report[i][-1]["loss"] for i in range(len(self.report))]) / len(self.report)
 
 clf_search = sklearn.model_selection.RandomizedSearchCV(
-    estimator = Experiment(**params),
+    estimator = ZOROExperiment(**params),
     param_distributions = params,
     n_iter = 50, # Run 50 random trials
     n_jobs = -1, # Run 10 jobs at once
@@ -150,3 +145,15 @@ search_results = clf_search.fit(X, y) # Make sure to clear the output of this ce
 
 # We see NaNs when numerical errors due to overflow occur (indicates a terrible hyperparam combination)
 pd.DataFrame(search_results.cv_results_).sort_values("mean_test_score").to_csv('grid_search_results.csv')
+
+rs = ShuffleSplit(n_splits=1, train_size=16, random_state=42)
+# Recover the exact indices used for training (kind of hacky)
+for train_index, test_index in rs.split(X):
+    X_sel, y_sel = X[train_index], y[train_index]
+
+best_params = search_results.cv_results_["params"][0]
+best_params.update({"function_budget" : 5e5})
+best_exp = ZOROExperiment(**best_params)
+best_exp.fit(X_sel[:16,:], y_sel[:16])
+
+torch.save(best_exp.report, "gaussian_d1000_20220616_report.pt")
