@@ -13,8 +13,8 @@ import albumentations
 from albumentations import pytorch as AT
 import math
 
-DATASET = 'Cancer'
-# DATASET = 'FashionMNIST'
+# DATASET = 'Cancer'
+DATASET = 'FashionMNIST'
 TARGET_CLASS = 1            # for attacking the FashionMNIST model
 
 sigmoid = lambda x: 1 / (1 + math.exp(-x))
@@ -82,10 +82,11 @@ elif DATASET == 'FashionMNIST':
         transform=transforms.Compose([transforms.ToTensor()])
     )
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, num_workers=0)
-
-    target = -1
-    while int(target) != TARGET_CLASS:
-        data, target = next(iter(dataloader))
+    data, target = next(iter(dataloader))
+    
+    while int(target) == TARGET_CLASS:
+        TARGET_CLASS = np.random.choice(10)
+        print(f'target = {target}', f'target class = {TARGET_CLASS}')
 
     # get objective function
     obj_func = LossFashionMnist(model=model, target_class=TARGET_CLASS, img=data.flatten(),
