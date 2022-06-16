@@ -40,6 +40,6 @@ class FashionCNN(nn.Module):
 
 def get_model(path: str, device) -> nn.Module:
     model = FashionCNN()
-    model.load_state_dict(torch.load(path))
+    model.load_state_dict(torch.load(path), map_location=device)
     model.eval()
     return model.to(device)
