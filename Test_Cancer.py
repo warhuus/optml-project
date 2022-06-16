@@ -51,7 +51,10 @@ class LossFashionMnist(LossCancer):
     def __call__(self, delta):
         input = torch.reshape(self.true_img + torch.tensor(delta).to(self.device), self.shape)
         with torch.no_grad():
-            output = self.model(input.type(torch.cuda.FloatTensor))
+            if torch.cuda.is_available():
+                output = self.model(input.type(torch.cuda.FloatTensor))
+            else:
+                output = self.model(input.type(torch.FloatTensor))
         pr = torch.nn.functional.softmax(output[0], dim=0).cpu().numpy()
         maxZxi = max(np.delete(pr, self.target_class))
         Zxt = pr[self.target_class]
