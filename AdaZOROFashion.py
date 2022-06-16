@@ -117,7 +117,7 @@ class AdaZOROExperiment:
 
             # initialize optimizer object
             self.report.append([{"evals": 0, "x": x0, "y": label, "loss": obj_func(np.expand_dims(x0, 0))[0]}])
-            opt = optimizers.ZORO(x0, obj_func, params, function_budget=self.function_budget, function_target=0.001)
+            opt = optimizers.AdaZORO(x0, obj_func, params, function_budget=self.function_budget, function_target=0.001)
 
             # the optimization routine
             termination = False
@@ -131,7 +131,7 @@ class AdaZOROExperiment:
                 # If ZORO terminated because the target accuracy is met,
                 # termination= T.
 
-                evals_ZORO, solution_ZORO, termination = opt.step()
+                evals_ZORO, sparsity, solution_ZORO, termination = opt.step()
                 pr_solution_ZORO = obj_func.pr
                 # save some useful values
                 self.report[-1].append({"evals" : evals_ZORO, "x": solution_ZORO, "loss": np.mean(opt.fd), "y": pr_solution_ZORO})
