@@ -72,10 +72,10 @@ class LossCancer(object):
             self.true_img = torch.tensor(self.true_img)
         input = torch.reshape(self.true_img + torch.tensor(delta).to(self.device), self.shape)
         with torch.no_grad():
-            if torch.cuda.is_available():
-                output = self.model(input.type(torch.cuda.FloatTensor))
-            else:
+            if self.device == torch.device('cpu'):
                 output = self.model(input.type(torch.FloatTensor))
+            else:
+                output = self.model(input.type(torch.cuda.FloatTensor))
         pr = output[:, 0][0].cpu().numpy()
         fx = sigmoid(pr)
         return ((fx - 1 - self.true_lbl) ** 2 +
