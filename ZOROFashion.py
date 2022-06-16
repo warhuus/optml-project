@@ -149,4 +149,4 @@ search_results = clf_search.fit(X, y) # Make sure to clear the output of this ce
 # We see NaNs when numerical errors due to overflow occur (indicates a terrible hyperparam combination)
 pd.DataFrame(search_results.cv_results_).sort_values("mean_test_score").to_csv('grid_search_results.csv')
 
-torch.save(clf_search.best_estimator_.report, "gaussian_d1000_20220616_report.pt")
+torch.save(clf_search.best_estimator_.report, "ZORO_report.pt")

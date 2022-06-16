@@ -24,7 +24,7 @@ adaparams = {
     "prop_sparsity": [0.05, 0.10, 0.15, 0.20, 0.25], 
     "lamb" : [0.1], 
     "norm" : [2],
-    "function_budget": [5e3], # for hyperparameter tuning, we give this as a budget
+    "function_budget": [1e4], # for hyperparameter tuning, we give this as a budget
     "num_samples_constant": [784],
     "phi_cosamp": [0.2, 0.4, 0.6, 0.8],
     "phi_lstsq": [0.05, 0.1, 0.15, 0.20, 0.25],
