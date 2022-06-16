@@ -58,8 +58,8 @@ class LossFashionMnist(object):
 
     def __call__(self, delta):
         self.pr = self.pr_func(delta)
-        max_Fx_i_neq_t0 = np.log(max(np.delete(self.pr, self.true_lbl)))
-        Fx_t0 = np.log(self.pr[self.true_lbl])
+        max_Fx_i_neq_t0 = np.log(max(np.delete(self.pr, self.true_lbl)) + 1e-6)
+        Fx_t0 = np.log(self.pr[self.true_lbl] + 1e-6)
         return max(Fx_t0 - max_Fx_i_neq_t0, 0) + self.lambda_ * np.linalg.norm(delta, 0, axis=1)
 
     def pr_func(self, delta):
