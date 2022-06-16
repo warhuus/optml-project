@@ -128,7 +128,7 @@ clf_search = sklearn.model_selection.RandomizedSearchCV(
     estimator = Experiment(**params),
     param_distributions = params,
     n_iter = 50, # Run 50 random trials
-    n_jobs = 1, # Run 10 jobs at once
+    n_jobs = -1, # Run 10 jobs at once
     refit=True,
     cv = ShuffleSplit(n_splits=1, train_size=16) # We attack the same 16 examples for every trial
 )
