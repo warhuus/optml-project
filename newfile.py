@@ -12,11 +12,11 @@ from ZORO import optimizers
 
 # Parameters to search for ZORO attack
 params = {
-    "step_size": [1e-2, 1e-1],
-    "delta": [1e-1, 1e-2], 
-    "max_cosamp_iter": [10],
-    "cosamp_tol": [1e-3], 
-    "prop_sparsity": [0.05], 
+    "step_size": [1e-2, 1e-1, 1e0, 1e1, 1e2],
+    "delta": [1e-1, 1e-2, 1e-3, 1e-4], 
+    "max_cosamp_iter": [10, 15, 20, 25],
+    "cosamp_tol": [1e-3, 1e-2, 1e-1], 
+    "prop_sparsity": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5], 
     "lamb" : [1], 
     "norm" : [2],
 }
