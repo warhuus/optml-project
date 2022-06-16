@@ -38,8 +38,8 @@ class FashionCNN(nn.Module):
         
         return out
 
-def get_model(path: str) -> nn.Module:
+def get_model(path: str, device) -> nn.Module:
     model = FashionCNN()
     model.load_state_dict(torch.load(path))
     model.eval()
-    return model
+    return model.to(device)

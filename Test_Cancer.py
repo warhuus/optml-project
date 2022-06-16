@@ -53,8 +53,8 @@ class LossFashionMnist(LossCancer):
         with torch.no_grad():
             output = self.model(input.type(torch.cuda.FloatTensor))
         pr = torch.nn.functional.softmax(output[0], dim=0).cpu().numpy()
-        maxZxi = max(np.delete(pr, self.adv_lbl))
-        Zxt = pr[self.adv_lbl]
+        maxZxi = max(np.delete(pr, self.target_class))
+        Zxt = pr[self.target_class]
         return max(maxZxi - Zxt, 0) + self.lambda_ * np.linalg.norm(delta, 0)
 
 if DATASET == 'Cancer':
@@ -74,7 +74,7 @@ if DATASET == 'Cancer':
 elif DATASET == 'FashionMNIST':
 
     # get model
-    model = fashionmnist_utils.get_model(device)
+    model = fashionmnist_utils.get_model(os.path.join('FashionMNIST', 'model.pt'), device)
 
     # get data
     dataset = datasets.FashionMNIST(
