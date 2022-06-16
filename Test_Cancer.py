@@ -17,48 +17,7 @@ import math
 DATASET = 'FashionMNIST'
 TARGET_CLASS = 1            # for attacking the FashionMNIST model
 
-sigmoid = lambda x: 1 / (1 + math.exp(-x))
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-
-class LossCancer(object):
- 
-	def __init__(self, model, img, img_shape, true_lbl, device) -> None:
-		self.device = device
-		self.model = model
-		self.true_img = img.to(self.device)
-		self.true_lbl = true_lbl[0]
-		self.lambda_ = 0.9
-		self.shape = img_shape
-	
-	def __call__(self, delta):
-		input = torch.reshape(self.true_img + torch.tensor(delta).to(self.device), self.shape)
-		with torch.no_grad():
-			if torch.cuda.is_available():
-				output = self.model(input.type(torch.cuda.FloatTensor))
-			else:
-				output = self.model(input.type(torch.FloatTensor))
-		pr = output[:, 0][0].cpu().numpy()
-		fx = sigmoid(pr)
-		return ((fx - 1 - self.true_lbl) ** 2 +
-				self.lambda_ * np.linalg.norm(delta, 0))
-
-class LossFashionMnist(LossCancer):
-
-    def __init__(self, target_class: int, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.target_class = target_class
-
-    def __call__(self, delta):
-        input = torch.reshape(self.true_img + torch.tensor(delta).to(self.device), self.shape)
-        with torch.no_grad():
-            if torch.cuda.is_available():
-                output = self.model(input.type(torch.cuda.FloatTensor))
-            else:
-                output = self.model(input.type(torch.FloatTensor))
-        pr = torch.nn.functional.softmax(output[0], dim=0).cpu().numpy()
-        maxZxi = max(np.delete(pr, self.target_class))
-        Zxt = pr[self.target_class]
-        return max(maxZxi - Zxt, 0) + self.lambda_ * np.linalg.norm(delta, 0)
 
 if DATASET == 'Cancer':
 
@@ -71,7 +30,7 @@ if DATASET == 'Cancer':
     data, target = next(iter(dataloader))
 
     # get objective function
-    obj_func = LossCancer(model=model, img=data.flatten(), true_lbl=target,
+    obj_func = fashionmnist_utils.LossCancer(model=model, img=data.flatten(), true_lbl=target,
                           img_shape=data.shape, device=device)
 
 elif DATASET == 'FashionMNIST':
@@ -92,7 +51,7 @@ elif DATASET == 'FashionMNIST':
         print(f'target = {target}', f'target class = {TARGET_CLASS}')
 
     # get objective function
-    obj_func = LossFashionMnist(model=model, target_class=TARGET_CLASS, img=data.flatten(),
+    obj_func = fashionmnist_utils.LossFashionMnist(model=model, target_class=TARGET_CLASS, img=data.flatten(),
                                 true_lbl=target, img_shape=data.shape, device=device)
 
 else:
