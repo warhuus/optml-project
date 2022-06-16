@@ -12,11 +12,11 @@ from ZORO import optimizers
 
 # Parameters to search for ZORO attack
 params = {
-    "step_size": [1e-2, 1e-1, 1e0, 1e1, 1e2],
-    "delta": [1e-1, 1e-2, 1e-3, 1e-4], 
-    "max_cosamp_iter": [10, 15, 20, 25],
-    "cosamp_tol": [1e-3, 1e-2, 1e-1], 
-    "prop_sparsity": [0.05, 0.1, 0.2, 0.3, 0.4, 0.5], 
+    "step_size": [1e-2],
+    "delta": [1e-1, 1e-2], 
+    "max_cosamp_iter": [10],
+    "cosamp_tol": [1e-3], 
+    "prop_sparsity": [0.05, 0.1], 
     "lamb" : [1], 
     "norm" : [2],
     "function_budget": [100]
@@ -115,8 +115,8 @@ class ZOROExperiment:
                 # save some useful values
                 self.report[-1].append({"evals" : evals_ZORO, "x": solution_ZORO, "loss": np.mean(opt.fd)})
                 # print some useful values
-                #opt.report( f'Estimated f(x_{i}): %f  function evals: %d\n' %
-                #    (np.mean(opt.fd), evals_ZORO) )
+                opt.report( f'Estimated f(x_{i}): %f  function evals: %d\n' %
+                   (np.mean(opt.fd), evals_ZORO) )
         self.loss = sum([self.report[i][-1]["loss"] for i in range(len(self.report))]) / len(self.report)
 
 clf_search = sklearn.model_selection.RandomizedSearchCV(
