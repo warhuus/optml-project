@@ -107,7 +107,7 @@ class ZORO(BaseOptimizer):
                 return self.function_evals, self.x, 'T'
  
         self.t += 1
-        return self.function_evals, False, False
+        return self.function_evals, self.x, False
     
     
     
