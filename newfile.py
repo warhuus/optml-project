@@ -99,7 +99,7 @@ class Experiment:
 
             # initialize optimizer object
             performance_log_ZORO.append([(0, obj_func(np.expand_dims(x0, 0))[0])])
-            opt = optimizers.ZORO(x0, obj_func, params, function_budget=100, function_target=0.001)
+            opt = optimizers.ZORO(x0, obj_func, params, function_budget=1e5, function_target=0.001)
 
             # the optimization routine
             termination = False
