@@ -38,7 +38,7 @@ class ZOROExperiment:
         self.prop_sparsity = prop_sparsity
         self.lamb = lamb
         self.norm = norm
-        self.model = fashionmnist_utils.get_model(os.path.join('FashionMNIST', 'model.pt'), 'cpu')
+        self.model = fashionmnist_utils.get_model(os.path.join('FashionMNIST', 'resnet.pt'), device)
         self.device = device
         self.function_budget = function_budget
             
@@ -89,9 +89,8 @@ class ZOROExperiment:
             label_attack = np.random.choice(list(set(range(10)) - set([label])))
 
             obj_func = fashionmnist_utils.LossFashionMnist(
-                target_class=label_attack, 
                 model=self.model,
-                img=xx0,
+                img=np.expand_dims(xx0, 0),
                 img_shape=(1, 28, 28),
                 true_lbl=label,
                 device=self.device
@@ -130,35 +129,24 @@ clf_search = sklearn.model_selection.RandomizedSearchCV(
     n_iter = 100, # Run 50 random trials
     n_jobs = 20, # Run 10 jobs at once
     refit=True,
-    cv = ShuffleSplit(n_splits=1, train_size=16) # We attack the same 16 examples for every trial
+    cv = ShuffleSplit(n_splits=1, train_size=19, random_state=42)
 )
 
 # get model
-model = fashionmnist_utils.get_model(os.path.join('FashionMNIST', 'model.pt'), device)
+model = fashionmnist_utils.get_model(os.path.join('FashionMNIST', 'resnet.pt'), device)
 
 # get data
 dataset = datasets.FashionMNIST(
     os.path.join("FashionMNIST", "data"), download=True,
     transform=transforms.Compose([transforms.ToTensor()])
 )
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=50, num_workers=0)
-data, target = next(iter(dataloader))
-X = np.array([sample.flatten().numpy() for sample in data])
-y = target.numpy()
+
+dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, num_workers=0)
+X, y = fashionmnist_utils.generate_data(dataloader, model, device)
 
 search_results = clf_search.fit(X, y) # Make sure to clear the output of this cell before saving
 
 # We see NaNs when numerical errors due to overflow occur (indicates a terrible hyperparam combination)
 pd.DataFrame(search_results.cv_results_).sort_values("mean_test_score").to_csv('grid_search_results.csv')
 
-rs = ShuffleSplit(n_splits=1, train_size=16, random_state=42)
-# Recover the exact indices used for training (kind of hacky)
-for train_index, test_index in rs.split(X):
-    X_sel, y_sel = X[train_index], y[train_index]
-
-best_params = search_results.cv_results_["params"][0]
-best_params.update({"function_budget" : 5e4})
-best_exp = ZOROExperiment(**best_params)
-best_exp.fit(X_sel[:16,:], y_sel[:16])
-
-torch.save(best_exp.report, "Fashion_ADAZORO_report.pt")
+torch.save(clf_search.best_estimator_.report, "gaussian_d1000_20220616_report.pt")
