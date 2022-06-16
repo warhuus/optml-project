@@ -9,17 +9,22 @@ from torchvision import datasets, transforms
 
 import FashionMNIST.utils as fashionmnist_utils
 from ZORO import optimizers
+import random
+
+np.random.seed(42)
+torch.manual_seed(42)
+random.seed(0)
 
 # Parameters to search for ZORO attack
 params = {
-    "step_size": [1e-2],
-    "delta": [1e-1, 1e-2], 
-    "max_cosamp_iter": [10],
-    "cosamp_tol": [1e-3], 
-    "prop_sparsity": [0.05, 0.1], 
+    "step_size": [1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2],
+    "delta": [1e-3, 1e-4, 1e-5], 
+    "max_cosamp_iter": [5, 10, 15, 20, 25],
+    "cosamp_tol": [0.5], 
+    "prop_sparsity": [0.05, 0.1, 0.15, 0.20, 0.25], 
     "lamb" : [1], 
     "norm" : [2],
-    "function_budget": [100]
+    "function_budget": [1e4]
 }
 
 device = torch.device('cpu')
@@ -111,9 +116,9 @@ class ZOROExperiment:
                 # termination= T.
 
                 evals_ZORO, solution_ZORO, termination = opt.step()
-
+                pr_solution_ZORO = obj_func.pr
                 # save some useful values
-                self.report[-1].append({"evals" : evals_ZORO, "x": solution_ZORO, "loss": np.mean(opt.fd)})
+                self.report[-1].append({"evals" : evals_ZORO, "x": solution_ZORO, "loss": np.mean(opt.fd), "y": pr_solution_ZORO})
                 # print some useful values
                 opt.report( f'Estimated f(x_{i}): %f  function evals: %d\n' %
                    (np.mean(opt.fd), evals_ZORO) )
@@ -122,8 +127,8 @@ class ZOROExperiment:
 clf_search = sklearn.model_selection.RandomizedSearchCV(
     estimator = ZOROExperiment(**params),
     param_distributions = params,
-    n_iter = 50, # Run 50 random trials
-    n_jobs = -1, # Run 10 jobs at once
+    n_iter = 100, # Run 50 random trials
+    n_jobs = 20, # Run 10 jobs at once
     refit=True,
     cv = ShuffleSplit(n_splits=1, train_size=16) # We attack the same 16 examples for every trial
 )
@@ -152,8 +157,8 @@ for train_index, test_index in rs.split(X):
     X_sel, y_sel = X[train_index], y[train_index]
 
 best_params = search_results.cv_results_["params"][0]
-best_params.update({"function_budget" : 5e5})
+best_params.update({"function_budget" : 5e4})
 best_exp = ZOROExperiment(**best_params)
 best_exp.fit(X_sel[:16,:], y_sel[:16])
 
-torch.save(best_exp.report, "gaussian_d1000_20220616_report.pt")
+torch.save(best_exp.report, "Fashion_ADAZORO_report.pt")

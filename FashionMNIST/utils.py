@@ -88,6 +88,12 @@ class LossFashionMnist(LossCancer):
         self.target_class = target_class
 
     def __call__(self, delta):
+        self.pr = self.pr_func(delta)
+        maxZxi = max(np.delete(self.pr, self.target_class))
+        Zxt = self.pr[self.target_class]
+        return max(maxZxi - Zxt, 0) + self.lambda_ * np.linalg.norm(delta, 0, axis=1)
+	
+    def pr_func(self, delta):
         if isinstance(self.true_img, np.ndarray):
             self.true_img = torch.tensor(self.true_img)
         input = torch.reshape(self.true_img + torch.tensor(delta).to(self.device), (-1, *self.shape))
@@ -97,6 +103,4 @@ class LossFashionMnist(LossCancer):
             else:
                 output = self.model(input.type(torch.cuda.FloatTensor))
         pr = torch.nn.functional.softmax(output[0], dim=0).cpu().numpy()
-        maxZxi = max(np.delete(pr, self.target_class))
-        Zxt = pr[self.target_class]
-        return max(maxZxi - Zxt, 0) + self.lambda_ * np.linalg.norm(delta, 0, axis=1)
+        return pr
