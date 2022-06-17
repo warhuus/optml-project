@@ -28,6 +28,7 @@ params = {
 }
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+model = fashionmnist_utils.get_model(os.path.join('FashionMNIST', 'model', 'resnet.pt'), device)
 
 class ZOROExperiment:
 
@@ -39,7 +40,7 @@ class ZOROExperiment:
         self.prop_sparsity = prop_sparsity
         self.lamb = lamb
         self.norm = norm
-        self.model = fashionmnist_utils.get_model(os.path.join('FashionMNIST', 'model', 'resnet.pt'), device)
+        self.model = model
         self.device = device
         self.function_budget = function_budget
             
@@ -85,9 +86,7 @@ class ZOROExperiment:
         for i in range(len(X)):
             x0           = X[i, :] # 1D
             xx0          = x0.copy()
-
             label        = y[i]
-            label_attack = np.random.choice(list(set(range(10)) - set([label])))
 
             obj_func = fashionmnist_utils.LossFashionMnist(
                 model=self.model,
@@ -132,9 +131,6 @@ clf_search = sklearn.model_selection.RandomizedSearchCV(
     refit=True,
     cv = ShuffleSplit(n_splits=1, train_size=19, random_state=42)
 )
-
-# get model
-model = fashionmnist_utils.get_model(os.path.join('FashionMNIST', 'model', 'resnet.pt'), device)
 
 # get data
 dataset = datasets.FashionMNIST(
