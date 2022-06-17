@@ -31,7 +31,8 @@ adaparams = {
     "compessible_constant": [1, 1.1, 1.25, 1.5, 2]
 }
 
-device = torch.device('cpu')
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
 class AdaZOROExperiment:
 
     def __init__(self, step_size, delta, max_cosamp_iter, cosamp_tol, prop_sparsity, lamb, norm, function_budget,
