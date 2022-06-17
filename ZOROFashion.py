@@ -27,7 +27,8 @@ params = {
     "function_budget": [1e4]
 }
 
-device = torch.device('cpu')
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
 class ZOROExperiment:
 
     def __init__(self, step_size, delta, max_cosamp_iter, cosamp_tol, prop_sparsity, lamb, norm, function_budget):
