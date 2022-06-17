@@ -22,9 +22,9 @@ params = {
     "max_cosamp_iter": [5, 10, 15, 20, 25],
     "cosamp_tol": [0.5], 
     "prop_sparsity": [0.05, 0.1, 0.15, 0.20, 0.25], 
-    "lamb" : [1], 
+    "lamb" : [0.05], 
     "norm" : [2],
-    "function_budget": [1e4]
+    "function_budget": [1e5]
 }
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -146,4 +146,5 @@ search_results = clf_search.fit(X, y) # Make sure to clear the output of this ce
 # We see NaNs when numerical errors due to overflow occur (indicates a terrible hyperparam combination)
 pd.DataFrame(search_results.cv_results_).sort_values("mean_test_score").to_csv('grid_search_results.csv')
 
-torch.save(clf_search.best_estimator_.report, "ZORO_report.pt")
+savename = f"ZORO_L_{''.join(str(params['lamb']).split('.'))}_report.pt"
+torch.save(clf_search.best_estimator_.report, os.path.join('ouputs', savename))
