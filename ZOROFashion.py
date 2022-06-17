@@ -39,7 +39,7 @@ class ZOROExperiment:
         self.prop_sparsity = prop_sparsity
         self.lamb = lamb
         self.norm = norm
-        self.model = fashionmnist_utils.get_model(os.path.join('FashionMNIST', 'resnet.pt'), device)
+        self.model = fashionmnist_utils.get_model(os.path.join('FashionMNIST', 'model', 'resnet.pt'), device)
         self.device = device
         self.function_budget = function_budget
             
@@ -94,10 +94,10 @@ class ZOROExperiment:
                 img=np.expand_dims(xx0, 0),
                 img_shape=(1, 28, 28),
                 true_lbl=label,
-                device=self.device
+                device=self.device,
+                lamb=params['lamb'],
+                norm=params['norm']
             )
-
-            obj_func.lambda_ = params['lamb']
 
             # initialize optimizer object
             self.report.append([{"evals": 0, "x": x0, "y": label, "loss": obj_func(np.expand_dims(x0, 0))[0]}])
@@ -134,7 +134,7 @@ clf_search = sklearn.model_selection.RandomizedSearchCV(
 )
 
 # get model
-model = fashionmnist_utils.get_model(os.path.join('FashionMNIST', 'resnet.pt'), device)
+model = fashionmnist_utils.get_model(os.path.join('FashionMNIST', 'model', 'resnet.pt'), device)
 
 # get data
 dataset = datasets.FashionMNIST(

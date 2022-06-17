@@ -1,13 +1,16 @@
+import numpy as np
+import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
-import torch
-import numpy as np
 import torchvision.models as models
 from torchvision import transforms
 
-import math
 
 class ResNetFeatrueExtractor18(nn.Module):
+    """
+    Resnet ResNet model for fashion-mnist data. Model architecture and
+    training steup is courtesy of https://github.com/JiahongChen/resnet-pytorch.
+    """
     def __init__(self, pretrained = True):
         super(ResNetFeatrueExtractor18, self).__init__()
         model_resnet18 = models.resnet18(pretrained=pretrained)
@@ -32,38 +35,42 @@ class ResNetFeatrueExtractor18(nn.Module):
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         out = self.fc(x)
-
         return out
-
-def get_model(path: str, device) -> nn.Module:
-    model = ResNetFeatrueExtractor18()
-    model.load_state_dict(torch.load(path, map_location=device))
-    model.eval()
-    model.to(device)
-    return model
 
 
 class LossFashionMnist(object):
-    def __init__(self, model, img, img_shape, true_lbl, device) -> None:
+    def __init__(self, model: nn.Module, img: np.ndarray, img_shape: tuple,
+                 true_lbl: int, device: torch.device, lamb: float, norm: int) -> None:
+        """ Loss function for a non-targeted attach with fashion-MNIST data """
         self.device = device
         self.model = model
         self.true_img = img
-        try:
-            self.true_lbl = true_lbl[0]
-        except IndexError:
-            self.true_lbl = true_lbl
-        self.lambda_ = 0.9
+        self.true_lbl = true_lbl
+        self.lamb = lamb
+        self.norm = norm
         self.shape = img_shape
         self.transform = transforms.Lambda(lambda x: x.repeat(1, 3, 1, 1))
 
     def __call__(self, delta):
+        """ Calculate attack loss function """
+
+        # calc probabilities from model
         self.pr = self.pr_func(delta)
+
+        # calc both terms in loss function
         max_Fx_i_neq_t0 = np.log(max(np.delete(self.pr, self.true_lbl)) + 1e-6)
         Fx_t0 = np.log(self.pr[self.true_lbl] + 1e-6)
-        return max(Fx_t0 - max_Fx_i_neq_t0, 0) + self.lambda_ * np.linalg.norm(delta, 2, axis=1)
+
+        # return both terms plus regularizer
+        return max(Fx_t0 - max_Fx_i_neq_t0, 0) + self.lamb * np.linalg.norm(delta, self.norm, axis=1)
 
     def pr_func(self, delta):
+        """ Get model output in the form of probabilities per class """
+
+        # transform input and duplicate color channel (to fit with resnet model)
         input = self.transform(torch.tensor(np.reshape(self.true_img + delta, (-1, *self.shape)))).to(self.device)
+
+        # get output and take softmax to get probabilities
         with torch.no_grad():
             if self.device == torch.device('cpu'):
                 output = self.model(input.type(torch.FloatTensor))
@@ -72,7 +79,16 @@ class LossFashionMnist(object):
         return torch.nn.functional.softmax(output[0], dim=0).cpu().numpy()
 
 
-def generate_data(test_loader: Dataset, model: torch.nn, device: torch.device):
+def get_model(path: str, device: torch.device) -> nn.Module:
+    """ Load trained resnet model """
+    model = ResNetFeatrueExtractor18()
+    model.load_state_dict(torch.load(path, map_location=device))
+    model.eval()
+    model.to(device)
+    return model
+
+def generate_data(test_loader: Dataset, model: nn.Module, device: torch.device):
+    """ Get 20 images that the pretrained model classifies correctly """
 
     inputs = []
     targets = []
@@ -82,10 +98,10 @@ def generate_data(test_loader: Dataset, model: torch.nn, device: torch.device):
 
     for data in test_loader:
 
-        # get the data and label
+        # get the data and true label
         image, label = data[0], data[1]
 
-        # evaluate the model
+        # use the data and model to get the predicted label
         image_3channels = transforms.Lambda(lambda x: x.repeat(1, 3, 1, 1))(image)
         with torch.no_grad():
             if device == torch.device('cpu'):
@@ -96,9 +112,11 @@ def generate_data(test_loader: Dataset, model: torch.nn, device: torch.device):
         pr = torch.nn.functional.softmax(output[0], dim=0).cpu().numpy()
         pred_class = np.argmax(pr)
 
+        # skip if the predicted label is not equal to the true label
         if pred_class != int(label):
             continue
-
+        
+        # we only want two samples per class
         if num_samples_per_label[label] >= 2:
             continue
 
