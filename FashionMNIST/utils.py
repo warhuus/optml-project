@@ -57,12 +57,11 @@ class LossFashionMnist(object):
         # calc probabilities from model
         self.pr = self.pr_func(delta)
 
-        # calc both terms in loss function
-        max_Fx_i_neq_t0 = np.log(max(np.delete(self.pr, self.true_lbl)) + 1e-6)
-        Fx_t0 = np.log(self.pr[self.true_lbl] + 1e-6)
+        # calc first term of loss function
+        zoo_loss = untargeted_zoo_loss(self.true_lbl, self.pr)
 
         # return both terms plus regularizer
-        return max(Fx_t0 - max_Fx_i_neq_t0, 0) + self.lamb * np.linalg.norm(delta, self.norm, axis=1)
+        return zoo_loss + self.lamb * np.linalg.norm(delta, self.norm, axis=1)
 
     def pr_func(self, delta):
         """ Get model output in the form of probabilities per class """
@@ -78,6 +77,13 @@ class LossFashionMnist(object):
                 output = self.model(input.type(torch.cuda.FloatTensor))
         return torch.nn.functional.softmax(output[0], dim=0).cpu().numpy()
 
+def untargeted_zoo_loss(true_lbl: int, predictions: np.ndarray):
+    """ Calculate untargeted loss from the ZOO paper (e.q. 5) """
+
+    max_Fx_i_neq_t0 = np.log(max(np.delete(predictions, true_lbl)) + 1e-6)
+    Fx_t0 = np.log(predictions[true_lbl] + 1e-6)
+
+    return max(Fx_t0 - max_Fx_i_neq_t0, 0)
 
 def get_model(path: str, device: torch.device) -> nn.Module:
     """ Load trained resnet model """
